@@ -1,0 +1,48 @@
+Correct 1 values from the start
+Correct 0 values from the start
+Correct 1 values from the start
+Correct 2 values from the start
+Traceback (most recent call last):
+  File "c:\Users\10011613\Documents\per\GML\GML.py", line 424, in getboollist
+    for x in self.classdict[nodename].nodelogic:
+AttributeError: 'InitNode' object has no attribute 'nodelogic'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\Users\10011613\.vscode\extensions\ms-python.python-2018.12.1\pythonFiles\ptvsd_launcher.py", line 45, in
+<module>
+    main(ptvsdArgs)
+  File "c:\Users\10011613\.vscode\extensions\ms-python.python-2018.12.1\pythonFiles\lib\python\ptvsd\__main__.py", line 265, in main
+    wait=args.wait)
+  File "c:\Users\10011613\.vscode\extensions\ms-python.python-2018.12.1\pythonFiles\lib\python\ptvsd\__main__.py", line 258, in handle_args
+    debug_main(addr, name, kind, *extra, **kwargs)
+  File "c:\Users\10011613\.vscode\extensions\ms-python.python-2018.12.1\pythonFiles\lib\python\ptvsd\_local.py", line 45, in debug_main
+    run_file(address, name, *extra, **kwargs)
+  File "c:\Users\10011613\.vscode\extensions\ms-python.python-2018.12.1\pythonFiles\lib\python\ptvsd\_local.py", line 79, in run_file
+    run(argv, addr, **kwargs)
+  File "c:\Users\10011613\.vscode\extensions\ms-python.python-2018.12.1\pythonFiles\lib\python\ptvsd\_local.py", line 140, in _run
+    _pydevd.main()
+  File "c:\Users\10011613\.vscode\extensions\ms-python.python-2018.12.1\pythonFiles\lib\python\ptvsd\_vendored\pydevd\pydevd.py", line 1925, in main
+    debugger.connect(host, port)
+  File "c:\Users\10011613\.vscode\extensions\ms-python.python-2018.12.1\pythonFiles\lib\python\ptvsd\_vendored\pydevd\pydevd.py", line 1283, in run
+    return self._exec(is_module, entry_point_fn, module_name, file, globals, locals)
+  File "c:\Users\10011613\.vscode\extensions\ms-python.python-2018.12.1\pythonFiles\lib\python\ptvsd\_vendored\pydevd\pydevd.py", line 1290, in _exec
+    pydev_imports.execfile(file, globals, locals)  # execute the script
+  File "c:\Users\10011613\.vscode\extensions\ms-python.python-2018.12.1\pythonFiles\lib\python\ptvsd\_vendored\pydevd\_pydev_imps\_pydev_execfile.py", line 25, in execfile
+    exec(compile(contents+"\n", file, 'exec'), glob, loc)
+  File "c:\Users\10011613\Documents\per\GML\GML.py", line 640, in <module>
+    mtrain_caus0_seq0(xagi, x, y)
+  File "c:\Users\10011613\Documents\per\GML\GML.py", line 609, in mtrain_caus0_seq0
+    gmlmainobj.backpropagation(depvar)
+  File "c:\Users\10011613\Documents\per\GML\GML.py", line 550, in backpropagation
+    self.backpropogate_spec(names, stimuli)
+  File "c:\Users\10011613\Documents\per\GML\GML.py", line 536, in backpropogate_spec
+    self.classdict[inputnames[x]].nodelogic, self.classdict[inputnames[x]].dontcares[0])
+  File "c:\Users\10011613\Documents\per\GML\GML.py", line 536, in backpropogate_spec
+    self.classdict[inputnames[x]].nodelogic, self.classdict[inputnames[x]].dontcares[0])
+  File "c:\Users\10011613\Documents\per\GML\GML.py", line 526, in backpropogate_spec
+    boollist = self.getboollist(inputnames[x])
+  File "c:\Users\10011613\Documents\per\GML\GML.py", line 427, in getboollist
+    raise NotImplementedError('self.destroy_conns() has entered. Look into it.')
+NotImplementedError: self.destroy_conns() has entered. Look into it.
