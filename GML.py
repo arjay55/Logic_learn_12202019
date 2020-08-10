@@ -629,7 +629,7 @@ if __name__ == '__main__':
                    math.ceil(math.log(350e3, 2)), 'node')
 
     # 2 feedforward layers
-    xagi.causation()
+    # xagi.causation()
     endtrain = 0
     fullstop = 0
     while endtrain < maxtrain:
