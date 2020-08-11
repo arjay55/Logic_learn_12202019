@@ -5,11 +5,13 @@ Created on Sat Dec  2 20:16:05 2017
 @author: TEUSER20
 """
 
+import math
 import random
 import string
 from copy import deepcopy
-from itertools import product, permutations
-import math
+from itertools import product
+from random import shuffle
+
 import numpy as np
 from sympy.logic import SOPform, false, true
 
@@ -235,6 +237,7 @@ class BoolNode:
         """
         self.boolfunc = SOPform(self.nodelogic, self.minterms, self.dontcares)
         self.output = self.boolfunc.subs(self.getbooldict())
+        print(self.boolfunc)
 
 
 class InitNode:
@@ -507,12 +510,10 @@ class BoolAGI:
         # backup gates first.
         # bk_gates = self.backup_gate(inputnames)
         leninputs = len(inputnames)
-        permutgen = permutations(range(leninputs), leninputs)
-        print("length is {}".format(leninputs))
-        for iterlist in permutgen:
-            break
 
-        return self.backprop_unit(inputnames, iterlist, oneddata)
+        random_eval = list(range(leninputs))
+        shuffle(random_eval)
+        return self.backprop_unit(inputnames, random_eval, oneddata)
 
     def backprop_unit(self, inputnames, iterlist, oneddata):
 
@@ -524,22 +525,20 @@ class BoolAGI:
                 boollist = self.getboollist(inputnames[x])
                 if boollist is None:
                     # hit the input nodes
-                    continue
+                    return -1
 
                 elif boollist in self.classdict[inputnames[x]].dontcares:
                     self.logicsimp(inputnames[x], boollist, oneddata[x])
                     listtrue = self.gettrue(inputnames, oneddata)
-
+                    return
                 elif len(self.classdict[inputnames[x]].dontcares) > 0:
+                    print("going inside...")
                     # this complicates the matter on iterations...
                     if self.backpropogate_spec(self.classdict[inputnames[x]].nodelogic,
                                                self.classdict[inputnames[x]].dontcares[0]) == -1:
-                        break
+                        return -1
                 else:
                     continue
-
-        if not np.all(listtrue):
-            return -1  # unit backpropagation failure.
 
     def backpropagation(self, stimuli):
         """
@@ -628,10 +627,14 @@ if __name__ == '__main__':
     xagi = BoolAGI(inputbits, outputbits,
                    math.ceil(math.log(350e3, 2)), 'node')
 
-    # 2 feedforward layers
-    # xagi.causation()
+    # 3 feedforward layers
+    xagi.causation()
+    xagi.causation()
+
+
     endtrain = 0
     fullstop = 0
+
     while endtrain < maxtrain:
         # restart generator
         if fullstop == -1:
@@ -648,10 +651,11 @@ if __name__ == '__main__':
                 if np.bitwise_xor(xagi.arrout, y).any():
                     if mtrain_caus0_seq0(xagi, y) == -1:
                         fullstop = -1
+                    ct += 1
                     endtrain = ct
                     print('Fix attempted. Correct {} values from the start'.format(endtrain))
-                    endtrain
                     break
                 else:
-                    mtrain_caus0_seq0(xagi, y)
                     ct += 1
+                    endtrain = ct
+                    continue
