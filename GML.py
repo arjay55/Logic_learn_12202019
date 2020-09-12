@@ -154,18 +154,18 @@ def lettergen():
     numlist[-1] = 0
     letterclass.letters.append(None)
     yield letterclass.letterall(numlist)
-    while (True):
+    while True:
         for x in range(1, numletters):
             numlist[-1] = x
             yield letterclass.letterall(numlist)
         for x in (len(numlist) - 2, -1, -1):
-            if (numlist[x] < (numletters - 1)):
+            if numlist[x] < (numletters - 1):
                 numlist[x] += 1
                 numlist[x + 1] = 0
                 yield letterclass.letterall(numlist)
                 break
             else:
-                if (len(numlist) < (len(numlist) - x) + 1):
+                if len(numlist) < (len(numlist) - x) + 1:
                     numlist.insert(0, 1)
                     letterclass.letters.append(None)
                     numlist[x] = 0
@@ -183,7 +183,7 @@ def trunc_inputs(allinputs, maxinput):
     :param maxinput:
     :return:
     """
-    if (len(allinputs) > maxinput):
+    if len(allinputs) > maxinput:
         random.shuffle(allinputs)
 
     return allinputs[:maxinput]
@@ -269,6 +269,10 @@ class BoolAGI:
         self.maxpermute = maxpermute  # -1 means no limit.
         # generate input containers
         xlettergen = lettergen()
+
+        # store and execute inputarray and traindata
+        self.inputarray = None
+
         for _ in range(noinputs):
             testr = self.nodeprefix + '_' + next(xlettergen) + '_' + 'in'
             self.classdict[testr] = InitNode()
@@ -306,7 +310,7 @@ class BoolAGI:
             for y in range(len(namenz)):
                 te01 = []
                 for z in self.outnodes:
-                    if (np.random.random() < pdist[x - 1]):
+                    if np.random.random() < pdist[x - 1]:
                         te01.append(z)
 
                 inputupd.append([te01, namenz[y]])
@@ -458,7 +462,7 @@ class BoolAGI:
         """
         print("logic simplification being performed")
 
-        if (bit):
+        if bit:
             self.classdict[inputname].minterms.append(boollist)
             del self.classdict[inputname].dontcares[self.classdict[inputname].dontcares.index(
                 boollist)]
@@ -517,12 +521,11 @@ class BoolAGI:
 
     def backprop_unit(self, inputnames, iterlist, oneddata):
 
-        listtrue = self.gettrue(inputnames, oneddata)
         for x in iterlist:
-            if not listtrue[x]:
+            boollist = self.getboollist(inputnames[x])
+            if self.classdict[inputnames[x]].output != oneddata[x]:
                 # condition 1, dontcare mapping exists.
                 # 02172019: This may go to a convoluted flowchart
-                boollist = self.getboollist(inputnames[x])
                 if boollist is None:
                     # hit the input nodes
                     return -1
@@ -530,6 +533,8 @@ class BoolAGI:
                 elif boollist in self.classdict[inputnames[x]].dontcares:
                     self.logicsimp(inputnames[x], boollist, oneddata[x])
                     listtrue = self.gettrue(inputnames, oneddata)
+                    # add forwardprop, inefficient but only for analytical purposes
+                    self.forwardpropagation()
                     return
                 elif len(self.classdict[inputnames[x]].dontcares) > 0:
                     print("going inside...")
@@ -537,8 +542,11 @@ class BoolAGI:
                     if self.backpropogate_spec(self.classdict[inputnames[x]].nodelogic,
                                                self.classdict[inputnames[x]].dontcares[0]) == -1:
                         return -1
-                else:
-                    continue
+
+            elif boollist in self.classdict[inputnames[x]].dontcares: #learn the assumption
+                self.logicsimp(inputnames[x], boollist, oneddata[x])
+
+
 
     def backpropagation(self, stimuli):
         """
@@ -558,20 +566,18 @@ class BoolAGI:
             nodename = self.nodegrid[x, -1]
             self.arrout[x] = toint(self.classdict[nodename].output)
 
-    def forwardpropagation(self, inputarray, traindata):
+    def forwardpropagation(self):
         """
         perform forward propagation
         prime candidate for parallelization.
-        :param inputarray:
-        :param traindata:
         :return: array of output values (numpy array)
         """
-
         # will  attempt to reuse some created functions
         # 1. getboollist
         # 2.
+        # TODO: review if you have time
         self.nodegrid = getnodegrid(self.classdict)
-        self.loaddata(inputarray)
+        self.loaddata(self.inputarray)
         for x in range(1, self.nodegrid.shape[1]):
             curinputs = self.nodegrid[:, x][np.nonzero(self.nodegrid[:, x])]
             for y in curinputs:
@@ -629,8 +635,6 @@ if __name__ == '__main__':
 
     # 3 feedforward layers
     xagi.causation()
-    xagi.causation()
-
 
     endtrain = 0
     fullstop = 0
@@ -647,7 +651,8 @@ if __name__ == '__main__':
                 print('failure to learn. Need topological changes')
                 break
             else:
-                xagi.forwardpropagation(x, y)
+                xagi.inputarray = x
+                xagi.forwardpropagation()
                 if np.bitwise_xor(xagi.arrout, y).any():
                     if mtrain_caus0_seq0(xagi, y) == -1:
                         fullstop = -1
