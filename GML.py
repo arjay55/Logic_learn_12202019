@@ -236,7 +236,6 @@ class BoolNode:
         :return:
         """
         self.boolfunc = SOPform(self.nodelogic, self.minterms, self.dontcares)
-        self.output = self.boolfunc.subs(self.getbooldict())
         print(self.boolfunc)
 
 
@@ -279,18 +278,33 @@ class BoolAGI:
             self.inputlist.append(testr)
         self.nodegrid = getnodegrid(self.classdict)
 
-        self.causation()
+        self.outnodes = []
+
+        curinputs = self.nodegrid[:, -1][np.nonzero(self.nodegrid[:, -1])]
+        curinputst = np.transpose(curinputs).tolist()
+        xlettergen = lettergen()
+        curinputst = trunc_inputs(curinputst, self.maxinput)
+        for _ in range(self.noinputs):
+            curletter = next(xlettergen)
+            testr = self.nodeprefix + '_' + \
+                    curletter + '_' + str(self.depth)
+            self.classdict[testr] = BoolNode(
+                curinputst, self.depth, curletter, 'xagi')
+            self.updatefanout(testr, self.inputlist) # not used
+            self.outnodes.append(testr)
+
+        self.depth += 1
 
     def updatefanout(self, newnode, nodelist):
         """
         updates fanouts set of the node upon new connections
-        does not apply on generatlization phase
+        does not apply on generalization phase
         :param newnode: node to be connected with.
         :param nodelist: list of nodes to have the fanout attribute to be updated.
         :return:
         """
-        for x in nodelist:
-            self.classdict[x].fanout.add(newnode)
+        for _ in nodelist:
+            self.classdict[_].fanout.add(newnode)
 
     def getcausal(self):
         """
@@ -363,14 +377,17 @@ class BoolAGI:
         for x in nodenet:
             self.updateinput(x)
 
-    def causation(self):
+    def causation(self, num_layers):
         """
         constructs BoolNodes before output terminals.
+        :param num_layers: number of layers to add
         :return:
         """
+        if num_layers == 1:
+            raise Exception("Mininum layers to add are at least 2")
 
         self.outnodes = []
-        xlettergen = lettergen()
+
         # ct = 0
 
         # generate input connections
@@ -378,27 +395,41 @@ class BoolAGI:
         # input section
         curinputs = self.nodegrid[:, -1][np.nonzero(self.nodegrid[:, -1])]
         curinputst = np.transpose(curinputs).tolist()
+        curinputst = trunc_inputs(curinputst, self.maxinput)
 
-        def gennodestd(curinputst):
+        def gennodestd():
             """
             refactored code for node generation.
             #first function in a method!
-            :return:
-            """
+            :return:           """
+            xlettergen = lettergen()
 
-            curinputst = trunc_inputs(curinputst, self.maxinput)
-            for _ in range(self.nooutputs):
+            for _ in range(self.noinputs):
                 curletter = next(xlettergen)
                 testr = self.nodeprefix + '_' + \
                         curletter + '_' + str(self.depth)
                 self.classdict[testr] = BoolNode(
                     curinputst, self.depth, curletter, 'xagi')
-                self.updatefanout(testr, self.inputlist)
+                self.updatefanout(testr, self.inputlist) # not used
                 self.outnodes.append(testr)
 
             self.depth += 1
 
-        gennodestd(curinputst)
+        for _ in range(num_layers - 1):
+            gennodestd()
+
+        # final layer
+        xlettergen = lettergen()
+        for _ in range(self.nooutputs):
+            curletter = next(xlettergen)
+            testr = self.nodeprefix + '_' + \
+                    curletter + '_' + str(self.depth)
+            self.classdict[testr] = BoolNode(
+                curinputst, self.depth, curletter, 'xagi')
+            self.updatefanout(testr, self.inputlist)
+            self.outnodes.append(testr)
+
+        self.depth += 1
 
     def sequential(self):
         """
@@ -543,10 +574,8 @@ class BoolAGI:
                                                self.classdict[inputnames[x]].dontcares[0]) == -1:
                         return -1
 
-            elif boollist in self.classdict[inputnames[x]].dontcares: #learn the assumption
+            elif boollist in self.classdict[inputnames[x]].dontcares:  # learn the assumption
                 self.logicsimp(inputnames[x], boollist, oneddata[x])
-
-
 
     def backpropagation(self, stimuli):
         """
@@ -634,7 +663,7 @@ if __name__ == '__main__':
                    math.ceil(math.log(350e3, 2)), 'node')
 
     # 3 feedforward layers
-    xagi.causation()
+    xagi.causation(2)
 
     endtrain = 0
     fullstop = 0
