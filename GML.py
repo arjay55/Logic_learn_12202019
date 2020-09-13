@@ -184,7 +184,7 @@ def trunc_inputs(allinputs, maxinput):
     :return:
     """
     if len(allinputs) > maxinput:
-        random.shuffle(allinputs)
+        shuffle(allinputs)
 
     return allinputs[:maxinput]
 
@@ -236,7 +236,7 @@ class BoolNode:
         :return:
         """
         self.boolfunc = SOPform(self.nodelogic, self.minterms, self.dontcares)
-        print(self.boolfunc)
+        print("FORMULA: {}".format(self.boolfunc))
 
 
 class InitNode:
@@ -383,25 +383,17 @@ class BoolAGI:
         :param num_layers: number of layers to add
         :return:
         """
-        if num_layers == 1:
-            raise Exception("Mininum layers to add are at least 2")
 
         self.outnodes = []
-
-        # ct = 0
-
-        # generate input connections
-        self.nodegrid = getnodegrid(self.classdict)
-        # input section
-        curinputs = self.nodegrid[:, -1][np.nonzero(self.nodegrid[:, -1])]
-        curinputst = np.transpose(curinputs).tolist()
-        curinputst = trunc_inputs(curinputst, self.maxinput)
 
         def gennodestd():
             """
             refactored code for node generation.
             #first function in a method!
             :return:           """
+            self.nodegrid = getnodegrid(self.classdict)
+            curinputs = self.nodegrid[:, -1][np.nonzero(self.nodegrid[:, -1])]
+            curinputst = np.transpose(curinputs).tolist()
             xlettergen = lettergen()
 
             for _ in range(self.noinputs):
@@ -411,7 +403,6 @@ class BoolAGI:
                 self.classdict[testr] = BoolNode(
                     curinputst, self.depth, curletter, 'xagi')
                 self.updatefanout(testr, self.inputlist) # not used
-                self.outnodes.append(testr)
 
             self.depth += 1
 
@@ -419,6 +410,9 @@ class BoolAGI:
             gennodestd()
 
         # final layer
+        self.nodegrid = getnodegrid(self.classdict)
+        curinputs = self.nodegrid[:, -1][np.nonzero(self.nodegrid[:, -1])]
+        curinputst = np.transpose(curinputs).tolist()
         xlettergen = lettergen()
         for _ in range(self.nooutputs):
             curletter = next(xlettergen)
@@ -491,7 +485,6 @@ class BoolAGI:
         :param bit: training bit
         :return:
         """
-        print("logic simplification being performed")
 
         if bit:
             self.classdict[inputname].minterms.append(boollist)
@@ -502,6 +495,8 @@ class BoolAGI:
             del self.classdict[inputname].dontcares[self.classdict[inputname].dontcares.index(
                 boollist)]
             self.classdict[inputname].SOPcompute()
+
+        print("{0} {1}".format(inputname,len(self.classdict[inputname].dontcares)))
 
     def loaddata(self, inputarray):
         """
@@ -547,7 +542,7 @@ class BoolAGI:
         leninputs = len(inputnames)
 
         random_eval = list(range(leninputs))
-        shuffle(random_eval)
+        #shuffle(random_eval)
         return self.backprop_unit(inputnames, random_eval, oneddata)
 
     def backprop_unit(self, inputnames, iterlist, oneddata):
@@ -654,7 +649,7 @@ if __name__ == '__main__':
     # above methodology can also be a reinforcement learning technique as well.
     # TODO: [FEATURE] Architectural creation when noinputs > maxinput
     # TODO: add separate attribute max feedforward input where max_feed < maxinput
-    oneaddend = 5
+    oneaddend = 3
     inputbits = oneaddend * 2
     maxtrain = 2 ** 16
     outputbits = oneaddend + 1
@@ -663,10 +658,12 @@ if __name__ == '__main__':
                    math.ceil(math.log(350e3, 2)), 'node')
 
     # 3 feedforward layers
-    xagi.causation(2)
+    xagi.causation(1)
 
     endtrain = 0
     fullstop = 0
+
+    learn_progress = []
 
     while endtrain < maxtrain:
         # restart generator
@@ -688,8 +685,10 @@ if __name__ == '__main__':
                     ct += 1
                     endtrain = ct
                     print('Fix attempted. Correct {} values from the start'.format(endtrain))
+                    learn_progress.append(endtrain)
                     break
                 else:
                     ct += 1
                     endtrain = ct
                     continue
+    print("summary progress {}".format(learn_progress))
