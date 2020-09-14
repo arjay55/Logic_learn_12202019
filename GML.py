@@ -526,8 +526,8 @@ class BoolAGI:
         :return:
         """
 
-        for x in backup_gates:
-            self.classdict[x] = backup_gates[x]
+        for _ in backup_gates:
+            self.classdict[_] = backup_gates[_]
 
     def backpropogate_spec(self, inputnames, oneddata):
         """
@@ -547,31 +547,30 @@ class BoolAGI:
 
     def backprop_unit(self, inputnames, iterlist, oneddata):
 
-        for x in iterlist:
-            boollist = self.getboollist(inputnames[x])
-            if self.classdict[inputnames[x]].output != oneddata[x]:
+        for _ in iterlist:
+            boollist = self.getboollist(inputnames[_])
+            if self.classdict[inputnames[_]].output != oneddata[_]:
                 # condition 1, dontcare mapping exists.
                 # 02172019: This may go to a convoluted flowchart
                 if boollist is None:
                     # hit the input nodes
                     return -1
 
-                elif boollist in self.classdict[inputnames[x]].dontcares:
-                    self.logicsimp(inputnames[x], boollist, oneddata[x])
+                elif boollist in self.classdict[inputnames[_]].dontcares:
+                    self.logicsimp(inputnames[_], boollist, oneddata[_])
                     listtrue = self.gettrue(inputnames, oneddata)
                     # add forwardprop, inefficient but only for analytical purposes
                     self.forwardpropagation()
                     return
-                elif len(self.classdict[inputnames[x]].dontcares) > 0:
+                elif len(self.classdict[inputnames[_]].dontcares) > 0:
                     print("going inside...")
                     # this complicates the matter on iterations...
-                    if self.backpropogate_spec(self.classdict[inputnames[x]].nodelogic,
-                                               self.classdict[inputnames[x]].dontcares[0]) == -1:
+                    if self.backpropogate_spec(self.classdict[inputnames[_]].nodelogic,
+                                               self.classdict[inputnames[_]].dontcares[0]) == -1:
                         return -1
 
-            elif boollist in self.classdict[inputnames[x]].dontcares:  # learn the assumption
-                self.logicsimp(inputnames[x], boollist, oneddata[x])
-
+                else: # no correction if there are no mistakes. Just that. Minimal representation. The architecture is just proposed
+                    continue
     def backpropagation(self, stimuli):
         """
         v0.1--> no mistake memory, meaning, if connectivity collapse occurs, it is not remembered.
@@ -657,22 +656,25 @@ if __name__ == '__main__':
     xagi = BoolAGI(inputbits, outputbits,
                    math.ceil(math.log(350e3, 2)), 'node')
 
-    # 3 feedforward layers
     xagi.causation(1)
-
+    xagi.nodegrid = getnodegrid(xagi.classdict)
     endtrain = 0
     fullstop = 0
 
     learn_progress = []
+
+    xaddition1 = gmltests.addition1(oneaddend, oneaddend, outputbits)
+    shuff_xaddition = list(xaddition1)
+    shuffle(shuff_xaddition)
 
     while endtrain < maxtrain:
         # restart generator
         if fullstop == -1:
             print('[last loop] failure to learn. Need topological changes')
             break
-        xaddition1 = gmltests.addition1(oneaddend, oneaddend, outputbits)
+
         ct = 0
-        for x, y in xaddition1:
+        for x, y in shuff_xaddition:
             if fullstop == -1:
                 print('failure to learn. Need topological changes')
                 break
